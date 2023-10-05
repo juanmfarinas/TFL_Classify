@@ -16,12 +16,19 @@
 
 package org.tensorflow.lite.examples.classification
 
+//import org.tensorflow.lite.examples.classification.ml.DogModel
+
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.ImageFormat
 import android.graphics.Matrix
+import android.graphics.Rect
+import android.graphics.YuvImage
+import android.media.Image
 import android.os.Bundle
 import android.util.Log
 import android.util.Size
@@ -39,7 +46,8 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.RecyclerView
-import org.tensorflow.lite.examples.classification.ml.DogModel
+import org.tensorflow.lite.DataType
+import org.tensorflow.lite.examples.classification.ml.Mosquito
 import org.tensorflow.lite.examples.classification.ui.RecognitionAdapter
 import org.tensorflow.lite.examples.classification.util.YuvToRgbConverter
 import org.tensorflow.lite.examples.classification.viewmodel.Recognition
@@ -47,8 +55,11 @@ import org.tensorflow.lite.examples.classification.viewmodel.RecognitionListView
 import org.tensorflow.lite.gpu.CompatibilityList
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.model.Model
+import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
+import java.io.ByteArrayOutputStream
 import java.util.concurrent.Executors
-import kotlin.random.Random
+
+
 
 // Constants
 private const val MAX_RESULT_DISPLAY = 3 // Maximum number of results displayed
@@ -213,8 +224,8 @@ class MainActivity : AppCompatActivity() {
         // TODO 1: Add class variable TensorFlow Lite Model
         // Initializing the flowerModel by lazy so that it runs in the same thread when the process
         // method is called.
-        private val dogModel: DogModel by lazy {
-
+        //private val dogModel: DogModel by lazy {
+        private val mosquito: Mosquito by lazy {
             // TODO 6. Optional GPU acceleration
             val compatList = CompatibilityList()
 
@@ -227,7 +238,8 @@ class MainActivity : AppCompatActivity() {
             }
 
             // Initialize the Dog Model
-            DogModel.newInstance(ctx, options)
+            //DogModel.newInstance(ctx, options)
+            Mosquito.newInstance(ctx, options)
         }
 
 
@@ -236,10 +248,13 @@ class MainActivity : AppCompatActivity() {
             val items = mutableListOf<Recognition>()
 
             // TODO 2: Convert Image to Bitmap then to TensorImage
+            //val tfImage = TensorImage.fromBitmap(toBitmap(imageProxy))
             val tfImage = TensorImage.fromBitmap(toBitmap(imageProxy))
 
             // TODO 3: Process the image using the trained model, sort and pick out the top results
-            val outputs = dogModel.process(tfImage)
+            //val outputs = dogModel.process(tfImage)
+            //.probabilityAsCategoryList.apply {
+            val outputs = mosquito.process(tfImage)
                 .probabilityAsCategoryList.apply {
                     sortByDescending { it.score } // Sort with highest confidence first
                 }.take(MAX_RESULT_DISPLAY) // take the top results
@@ -256,6 +271,27 @@ class MainActivity : AppCompatActivity() {
             // Close the image,this tells CameraX to feed the next image to the analyzer
             imageProxy.close()
         }
+
+        private fun toBitmap(image: Image): Bitmap? {
+            val planes = image.planes
+            val yBuffer = planes[0].buffer
+            val uBuffer = planes[1].buffer
+            val vBuffer = planes[2].buffer
+            val ySize = yBuffer.remaining()
+            val uSize = uBuffer.remaining()
+            val vSize = vBuffer.remaining()
+            val nv21 = ByteArray(ySize + uSize + vSize)
+            //U and V are swapped
+            yBuffer[nv21, 0, ySize]
+            vBuffer[nv21, ySize, vSize]
+            uBuffer[nv21, ySize + vSize, uSize]
+            val yuvImage = YuvImage(nv21, ImageFormat.NV21, image.width, image.height, null)
+            val out = ByteArrayOutputStream()
+            yuvImage.compressToJpeg(Rect(0, 0, yuvImage.width, yuvImage.height), 75, out)
+            val imageBytes = out.toByteArray()
+            return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+        }
+
 
         /**
          * Convert Image Proxy to Bitmap
