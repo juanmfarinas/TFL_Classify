@@ -56,6 +56,7 @@ android {
         dataBinding = true
         mlModelBinding true
     }
+    namespace 'org.tensorflow.lite.examples.classification'
 
 }
 
