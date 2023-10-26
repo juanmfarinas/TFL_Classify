@@ -15,28 +15,22 @@
  */
 
 package org.tensorflow.lite.examples.classification
-
-//import org.tensorflow.lite.examples.classification.ml.DogModel
-
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.ImageFormat
 import android.graphics.Matrix
-import android.graphics.Rect
-import android.graphics.YuvImage
-import android.media.Image
 import android.os.Bundle
 import android.util.Log
 import android.util.Size
 import android.widget.Toast
 import androidx.activity.viewModels
+import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
@@ -46,7 +40,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.RecyclerView
-import org.tensorflow.lite.DataType
+import org.tensorflow.lite.examples.classification.databinding.ActivityMainBinding
 import org.tensorflow.lite.examples.classification.ml.Mosquito
 import org.tensorflow.lite.examples.classification.ui.RecognitionAdapter
 import org.tensorflow.lite.examples.classification.util.YuvToRgbConverter
@@ -55,8 +49,6 @@ import org.tensorflow.lite.examples.classification.viewmodel.RecognitionListView
 import org.tensorflow.lite.gpu.CompatibilityList
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.model.Model
-import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
-import java.io.ByteArrayOutputStream
 import java.util.concurrent.Executors
 
 
@@ -80,10 +72,16 @@ class MainActivity : AppCompatActivity() {
     private lateinit var imageAnalyzer: ImageAnalysis // Analysis use case, for running ML code
     private lateinit var camera: Camera
     private val cameraExecutor = Executors.newSingleThreadExecutor()
+    //binding by juanma
+    private lateinit var binding: ActivityMainBinding
+    //end
+
 
     // Views attachment
     private val resultRecyclerView by lazy {
         findViewById<RecyclerView>(R.id.recognitionResults) // Display the result of analysis
+        //binding = ActivityMainBinding.inflate(layoutInflater)
+        //findViewById<RecyclerView>(binding.recognitionResults) // Display the result of analysis
     }
     private val viewFinder by lazy {
         findViewById<PreviewView>(R.id.viewFinder) // Display the preview image from Camera
@@ -92,9 +90,17 @@ class MainActivity : AppCompatActivity() {
     // Contains the recognition result. Since  it is a viewModel, it will survive screen rotations
     private val recogViewModel: RecognitionListViewModel by viewModels()
 
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        //binding by juanma
+        //old
         setContentView(R.layout.activity_main)
+        //new
+        //binding = ActivityMainBinding.inflate(layoutInflater)
+        //setContentView(binding.root)
+
 
         // Request camera permissions
         if (allPermissionsGranted()) {
@@ -141,6 +147,7 @@ class MainActivity : AppCompatActivity() {
         permissions: Array<String>,
         grantResults: IntArray
     ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_CODE_PERMISSIONS) {
             if (allPermissionsGranted()) {
                 startCamera()
@@ -272,27 +279,6 @@ class MainActivity : AppCompatActivity() {
             imageProxy.close()
         }
 
-        private fun toBitmap(image: Image): Bitmap? {
-            val planes = image.planes
-            val yBuffer = planes[0].buffer
-            val uBuffer = planes[1].buffer
-            val vBuffer = planes[2].buffer
-            val ySize = yBuffer.remaining()
-            val uSize = uBuffer.remaining()
-            val vSize = vBuffer.remaining()
-            val nv21 = ByteArray(ySize + uSize + vSize)
-            //U and V are swapped
-            yBuffer[nv21, 0, ySize]
-            vBuffer[nv21, ySize, vSize]
-            uBuffer[nv21, ySize + vSize, uSize]
-            val yuvImage = YuvImage(nv21, ImageFormat.NV21, image.width, image.height, null)
-            val out = ByteArrayOutputStream()
-            yuvImage.compressToJpeg(Rect(0, 0, yuvImage.width, yuvImage.height), 75, out)
-            val imageBytes = out.toByteArray()
-            return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-        }
-
-
         /**
          * Convert Image Proxy to Bitmap
          */
@@ -300,7 +286,7 @@ class MainActivity : AppCompatActivity() {
         private lateinit var bitmapBuffer: Bitmap
         private lateinit var rotationMatrix: Matrix
 
-        @SuppressLint("UnsafeExperimentalUsageError")
+        @OptIn(ExperimentalGetImage::class) @SuppressLint("UnsafeExperimentalUsageError")
         private fun toBitmap(imageProxy: ImageProxy): Bitmap? {
 
             val image = imageProxy.image ?: return null
@@ -330,6 +316,7 @@ class MainActivity : AppCompatActivity() {
                 false
             )
         }
+
 
     }
 

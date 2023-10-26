@@ -27,9 +27,11 @@ import android.util.Log
 import android.util.Size
 import android.widget.Toast
 import androidx.activity.viewModels
+import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
@@ -267,7 +269,7 @@ class MainActivity : AppCompatActivity() {
         private lateinit var bitmapBuffer: Bitmap
         private lateinit var rotationMatrix: Matrix
 
-        @SuppressLint("UnsafeExperimentalUsageError")
+        @OptIn(ExperimentalGetImage::class) @SuppressLint("UnsafeExperimentalUsageError")
         private fun toBitmap(imageProxy: ImageProxy): Bitmap? {
 
             val image = imageProxy.image ?: return null
