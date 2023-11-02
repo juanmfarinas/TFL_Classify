@@ -272,6 +272,8 @@ class MainActivity : AppCompatActivity() {
                 items.add(Recognition(output.label, output.score))
             }
 
+            //codigo para guardar la lista con los max score
+
             // Return the result
             listener(items.toList())
 
